@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CommentSphere — Global Voices</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a24;
+    --card: #1c2130;
+    --border: #2a3047;
+    --accent: #4ade80;
+    --accent2: #60a5fa;
+    --warn: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --city: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(180deg, rgba(74,222,128,0.05) 0%, transparent 100%);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--text); }
+
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+    font-style: italic;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* Compose box */
+  .compose {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .compose::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .compose-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--city));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .compose-meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .compose-meta strong {
+    color: var(--text);
+    font-weight: 500;
+    display: block;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    padding: 14px 16px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 90px;
+  }
+
+  textarea:focus { border-color: var(--accent2); }
+  textarea::placeholder { color: var(--muted); }
+
+  .error-msg {
+    display: none;
+    font-size: 12px;
+    color: var(--warn);
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: rgba(248,113,113,0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(248,113,113,0.2);
+  }
+
+  .compose-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .lang-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .lang-select:focus { border-color: var(--accent2); }
+
+  .btn-post {
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-post:hover { background: #22c55e; transform: translateY(-1px); }
+  .btn-post:active { transform: translateY(0); }
+
+  /* Filter translate bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .filter-lang {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 12px;
+    outline: none;
+    cursor: pointer;
+    flex: 1;
+    max-width: 220px;
+  }
+
+  /* Comments */
+  .comments-list { display: flex; flex-direction: column; gap: 16px; }
+
+  .comment-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.2s;
+    animation: slideIn 0.35s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .comment-card:hover { border-color: #3a4060; }
+
+  .comment-card.removed {
+    animation: fadeOut 0.4s ease forwards;
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; transform: scale(0.97); height: 0; padding: 0; margin: 0; overflow: hidden; }
+  }
+
+  .comment-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .comment-info strong {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .city-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--city);
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 20px;
+    padding: 2px 8px;
+    margin-left: 8px;
+  }
+
+  .city-badge::before { content: '📍'; font-size: 10px; }
+
+  .comment-time {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .lang-tag {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--accent2);
+    background: rgba(96,165,250,0.1);
+    border: 1px solid rgba(96,165,250,0.2);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .comment-body {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #cdd0d8;
+    margin-bottom: 4px;
+  }
+
+  .translated-note {
+    font-size: 11px;
+    color: var(--accent2);
+    font-style: italic;
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+
+  .comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .action-btn:hover { border-color: #3a4060; color: var(--text); }
+
+  .action-btn.liked {
+    color: var(--accent);
+    border-color: rgba(74,222,128,0.3);
+    background: rgba(74,222,128,0.06);
+  }
+
+  .action-btn.disliked {
+    color: var(--warn);
+    border-color: rgba(248,113,113,0.3);
+    background: rgba(248,113,113,0.06);
+  }
+
+  .translate-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .translate-btn:hover {
+    border-style: solid;
+    border-color: var(--accent2);
+    background: rgba(96,165,250,0.06);
+  }
+
+  .dislike-bar {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+    display: none;
+  }
+
+  .dislike-fill {
+    height: 100%;
+    background: var(--warn);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .dislike-warning {
+    font-size: 11px;
+    color: var(--warn);
+    margin-top: 6px;
+    display: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.success { border-color: rgba(74,222,128,0.4); color: var(--accent); }
+  .toast.error { border-color: rgba(248,113,113,0.4); color: var(--warn); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Comment<span>Sphere</span></div>
+  <div class="tagline">Global Voices, One Place</div>
+</header>
+
+<div class="container">
+
+  <!-- Compose -->
+  <div class="section-title">Share your thoughts</div>
+  <div class="compose">
+    <div class="compose-header">
+      <div class="avatar">Y</div>
+      <div class="compose-meta">
+        <strong>You</strong>
+        <span id="your-city">📍 Detecting city...</span>
+      </div>
+    </div>
+    <textarea id="comment-input" placeholder="Write a comment in any language…" rows="3"></textarea>
+    <div class="error-msg" id="error-msg">⚠️ Comments cannot contain special characters like @, #, $, %, !, *, etc.</div>
+    <div class="compose-footer">
+      <select class="lang-select" id="post-lang">
+        <option value="en">🇬🇧 English</option>
+        <option value="es">🇪🇸 Spanish</option>
+        <option value="fr">🇫🇷 French</option>
+        <option value="de">🇩🇪 German</option>
+        <option value="ar">🇸🇦 Arabic</option>
+        <option value="zh">🇨🇳 Chinese</option>
+        <option value="ja">🇯🇵 Japanese</option>
+        <option value="pt">🇧🇷 Portuguese</option>
+        <option value="hi">🇮🇳 Hindi</option>
+        <option value="ru">🇷🇺 Russian</option>
+      </select>
+      <button class="btn-post" onclick="postComment()">Post Comment</button>
+    </div>
+  </div>
+
+  <!-- Filter / Translate -->
+  <div class="filter-bar">
+    <span class="filter-label">🌐 Translate all to:</span>
+    <select class="filter-lang" id="translate-lang" onchange="translateAll()">
+      <option value="original">Original language</option>
+      <option value="en">English</option>
+      <option value="es">Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="ar">Arabic</option>
+      <option value="zh">Chinese</option>
+      <option value="ja">Japanese</option>
+      <option value="pt">Portuguese</option>
+      <option value="hi">Hindi</option>
+      <option value="ru">Russian</option>
+    </select>
+  </div>
+
+  <!-- Comments -->
+  <div class="section-title">Discussion</div>
+  <div class="comments-list" id="comments-list"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SPECIAL_CHARS_RE = /[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?`~]/;
+
+const LANG_NAMES = {
+  en: 'English', es: 'Spanish', fr: 'French', de: 'German',
+  ar: 'Arabic', zh: 'Chinese', ja: 'Japanese', pt: 'Portuguese',
+  hi: 'Hindi', ru: 'Russian'
+};
+
+// Sample translations per language for demo content
+const TRANSLATIONS = {
+  en: {
+    s1: "This platform is really helpful for connecting people across different cultures!",
+    s2: "The comment translation feature is incredibly useful. I can now read comments from users all over the world.",
+    s3: "I love how this shows the city of each commenter. Makes it feel so much more personal and real.",
+  },
+  es: {
+    s1: "¡Esta plataforma es realmente útil para conectar personas de diferentes culturas!",
+    s2: "La función de traducción de comentarios es increíblemente útil. Ahora puedo leer comentarios de usuarios de todo el mundo.",
+    s3: "Me encanta cómo esto muestra la ciudad de cada comentarista. Se siente mucho más personal y real.",
+  },
+  fr: {
+    s1: "Cette plateforme est vraiment utile pour connecter des personnes de différentes cultures !",
+    s2: "La fonction de traduction des commentaires est incroyablement utile. Je peux maintenant lire les commentaires d'utilisateurs du monde entier.",
+    s3: "J'adore la façon dont cela montre la ville de chaque commentateur. Ça paraît tellement plus personnel et réel.",
+  },
+  de: {
+    s1: "Diese Plattform ist wirklich hilfreich, um Menschen aus verschiedenen Kulturen zu verbinden!",
+    s2: "Die Kommentarübersetzungsfunktion ist unglaublich nützlich. Ich kann jetzt Kommentare von Nutzern aus der ganzen Welt lesen.",
+    s3: "Ich liebe, wie hier die Stadt jedes Kommentators angezeigt wird. Es fühlt sich viel persönlicher und echter an.",
+  },
+  ar: {
+    s1: "هذه المنصة مفيدة جداً للتواصل بين الناس من ثقافات مختلفة!",
+    s2: "ميزة ترجمة التعليقات مفيدة بشكل لا يصدق. يمكنني الآن قراءة التعليقات من المستخدمين في جميع أنحاء العالم.",
+    s3: "أحب كيف يعرض هذا مدينة كل معلق. يجعلها تبدو أكثر شخصية وحقيقية.",
+  },
+  zh: {
+    s1: "这个平台对于连接不同文化的人非常有帮助！",
+    s2: "评论翻译功能非常有用。我现在可以阅读来自世界各地用户的评论。",
+    s3: "我喜欢这里显示每个评论者的城市。让一切感觉更加个人化和真实。",
+  },
+  ja: {
+    s1: "このプラットフォームは異文化間のつながりに本当に役立ちます！",
+    s2: "コメント翻訳機能は非常に便利です。世界中のユーザーからのコメントを読めるようになりました。",
+    s3: "各コメント者の都市が表示されるのが好きです。とても個人的でリアルに感じます。",
+  },
+};
+
+const CITIES = [
+  "Tokyo", "Lagos", "São Paulo", "Berlin", "Cairo",
+  "Mumbai", "Paris", "Toronto", "Seoul", "Istanbul",
+  "Buenos Aires", "Nairobi", "Jakarta", "London", "Mexico City"
+];
+
+const USERS = [
+  { name: "Amara O.", initial: "A", color: "#f59e0b" },
+  { name: "Léa M.", initial: "L", color: "#ec4899" },
+  { name: "Kenji T.", initial: "K", color: "#60a5fa" },
+  { name: "Carlos R.", initial: "C", color: "#34d399" },
+  { name: "Priya S.", initial: "P", color: "#a78bfa" },
+];
+
+let comments = [];
+let userCity = "Your City";
+let globalTranslateLang = "original";
+
+// Detect user city
+fetch("https://ipapi.co/json/")
+  .then(r => r.json())
+  .then(d => {
+    userCity = d.city || "Your City";
+    document.getElementById("your-city").textContent = "📍 " + userCity;
+  })
+  .catch(() => {
+    userCity = "Your City";
+    document.getElementById("your-city").textContent = "📍 Your City";
+  });
+
+// Seed comments
+function seedComments() {
+  const seeds = [
+    { user: USERS[0], city: "Lagos", lang: "en", key: "s1", time: "2m ago" },
+    { user: USERS[1], city: "Paris", lang: "fr", key: "s3", time: "8m ago" },
+    { user: USERS[2], city: "Tokyo", lang: "ja", key: "s2", time: "15m ago" },
+    { user: USERS[3], city: "Mexico City", lang: "es", key: "s1", time: "23m ago" },
+    { user: USERS[4], city: "Mumbai", lang: "hi", key: "s3", time: "41m ago" },
+  ];
+
+  // Hindi seed (not in TRANSLATIONS, just kept as original)
+  const hindiText = "यह प्लेटफ़ॉर्म विभिन्न संस्कृतियों के लोगों को जोड़ने में वाकई मददगार है!";
+
+  seeds.forEach((s, i) => {
+    const origText = s.lang === "hi"
+      ? hindiText
+      : TRANSLATIONS[s.lang]?.[s.key] || TRANSLATIONS["en"][s.key];
+
+    comments.push({
+      id: Date.now() + i,
+      user: s.user,
+      city: s.city,
+      lang: s.lang,
+      originalText: origText,
+      currentText: origText,
+      translationKey: s.key,
+      time: s.time,
+      likes: Math.floor(Math.random() * 12),
+      dislikes: 0,
+      liked: false,
+      disliked: false,
+      isTranslated: false,
+    });
+  });
+
+  renderComments();
+}
+
+function postComment() {
+  const input = document.getElementById("comment-input");
+  const text = input.value.trim();
+  const lang = document.getElementById("post-lang").value;
+  const errEl = document.getElementById("error-msg");
+
+  if (!text) { showToast("Please write something first.", "error"); return; }
+
+  if (SPECIAL_CHARS_RE.test(text)) {
+    errEl.style.display = "block";
+    setTimeout(() => errEl.style.display = "none", 3500);
+    return;
+  }
+
+  errEl.style.display = "none";
+
+  const newComment = {
+    id: Date.now(),
+    user: { name: "You", initial: "Y", color: "#60a5fa" },
+    city: userCity,
+    lang,
+    originalText: text,
+    currentText: text,
+    translationKey: null,
+    time: "Just now",
+    likes: 0,
+    dislikes: 0,
+    liked: false,
+    disliked: false,
+    isTranslated: false,
+  };
+
+  comments.unshift(newComment);
+  input.value = "";
+  renderComments();
+  showToast("Comment posted!", "success");
+}
+
+function likeComment(id) {
+  const c = comments.find(c => c.id === id);
+  if (!c) return;
+  if (c.liked) { c.liked = false; c.likes--; }
+  else {
+    c.liked = true; c.likes++;
+    if (c.disliked) { c.disliked = false; c.dislikes--; }
+  }
+  renderComments();
+}
+
+function dislikeComment(id) {
+  const c = comments.find(c => c.id === id);
+  if (!c) return;
+
+  if (c.disliked) { c.disliked = false; c.dislikes--; }
+  else {
+    c.disliked = true; c.dislikes++;
+    if (c.liked) { c.liked = false; c.likes--; }
+  }
+
+  if (c.dislikes >= 2) {
+    const el = document.getElementById("card-" + id);
+    if (el) el.classList.add("removed");
+    setTimeout(() => {
+      comments = comments.filter(x => x.id !== id);
+      renderComments();
+      showToast("Comment removed after 2 dislikes.", "error");
+    }, 400);
+    return;
+  }
+
+  renderComments();
+}
+
+function translateComment(id) {
+  const c = comments.find(c => c.id === id);
+  if (!c) return;
+
+  if (c.isTranslated) {
+    c.currentText = c.originalText;
+    c.isTranslated = false;
+  } else {
+    const targetLang = globalTranslateLang !== "original" ? globalTranslateLang : "en";
+    c.currentText = getTranslation(c, targetLang);
+    c.isTranslated = c.currentText !== c.originalText;
+  }
+  renderComments();
+}
+
+function translateAll() {
+  globalTranslateLang = document.getElementById("translate-lang").value;
+  comments.forEach(c => {
+    if (globalTranslateLang === "original") {
+      c.currentText = c.originalText;
+      c.isTranslated = false;
+    } else {
+      c.currentText = getTranslation(c, globalTranslateLang);
+      c.isTranslated = c.currentText !== c.originalText;
+    }
+  });
+  renderComments();
+  if (globalTranslateLang !== "original") {
+    showToast(`Translated to ${LANG_NAMES[globalTranslateLang]}`, "success");
+  }
+}
+
+function getTranslation(c, targetLang) {
+  if (c.translationKey && TRANSLATIONS[targetLang]?.[c.translationKey]) {
+    return TRANSLATIONS[targetLang][c.translationKey];
+  }
+  // For user-posted comments, simulate translation with a note
+  if (c.lang === targetLang) return c.originalText;
+  return `[${LANG_NAMES[targetLang]}] ${c.originalText}`;
+}
+
+function renderComments() {
+  const list = document.getElementById("comments-list");
+
+  if (comments.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">💬</div><p>No comments yet. Be the first to share your thoughts!</p></div>`;
+    return;
+  }
+
+  list.innerHTML = comments.map(c => {
+    const dislikePercent = (c.dislikes / 2) * 100;
+    const showBar = c.dislikes > 0;
+    return `
+    <div class="comment-card" id="card-${c.id}">
+      <div class="comment-top">
+        <div class="avatar" style="background: linear-gradient(135deg, ${c.user.color}, ${c.user.color}99)">${c.user.initial}</div>
+        <div class="comment-info" style="flex:1">
+          <strong>${c.user.name}<span class="city-badge">${c.city}</span></strong>
+          <div class="comment-time">${c.time}</div>
+        </div>
+        <span class="lang-tag">${c.lang}</span>
+      </div>
+
+      ${c.isTranslated ? `<div class="translated-note">🌐 Translated to ${LANG_NAMES[globalTranslateLang !== 'original' ? globalTranslateLang : 'en']}</div>` : ''}
+
+      <div class="comment-body">${c.currentText}</div>
+
+      <div class="comment-actions">
+        <button class="action-btn ${c.liked ? 'liked' : ''}" onclick="likeComment(${c.id})">
+          👍 ${c.likes}
+        </button>
+        <button class="action-btn ${c.disliked ? 'disliked' : ''}" onclick="dislikeComment(${c.id})">
+          👎 ${c.dislikes}
+        </button>
+        <button class="translate-btn" onclick="translateComment(${c.id})">
+          🌐 ${c.isTranslated ? 'Original' : 'Translate'}
+        </button>
+      </div>
+
+      ${showBar ? `
+      <div class="dislike-bar" style="display:block">
+        <div class="dislike-fill" style="width:${dislikePercent}%"></div>
+      </div>
+      <div class="dislike-warning" style="display:${c.dislikes === 1 ? 'block' : 'none'}">
+        ⚠️ 1 more dislike will remove this comment
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast", 2500);
+}
+
+// Init
+seedComments();
+</script>
+</body>
+</html>
